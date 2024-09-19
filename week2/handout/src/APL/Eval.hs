@@ -89,7 +89,7 @@ eval env (Apply e1 e2) = do
     (ValFun env' var e3, ValBool y') -> eval (envExtend var y env') e3
     (_, _) -> failure "Incorrect apply"
 
-eval env (TryCatch e1 e2) = undefined
+eval env (TryCatch e1 e2) = eval env e1 `catch` eval env e2
 
 evalIntHelper :: Env -> Exp -> (Integer -> Integer -> Integer) -> Exp -> Error -> EvalM Val
 evalIntHelper env e1 op e2 err =  do
@@ -132,3 +132,9 @@ evalIfHelper env e1 e2 e3 = do
     ValBool True -> eval env e2
     ValBool False -> eval env e3
     _ -> failure "Non-boolean conditional."
+
+catch :: EvalM a -> EvalM a -> EvalM a
+catch (EvalM m1) (EvalM m2) = EvalM $
+  case m1 of
+    Left _ -> m2
+    Right x -> Right x
