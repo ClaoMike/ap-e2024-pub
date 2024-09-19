@@ -1,4 +1,14 @@
-module APL.Eval
+-- module APL.Eval
+--   ( Val (..),
+--     Env,
+--     envEmpty,
+--     eval,
+--   )
+-- where
+
+-- import APL.AST (Exp (..), VName)
+
+module Eval
   ( Val (..),
     Env,
     envEmpty,
@@ -6,11 +16,12 @@ module APL.Eval
   )
 where
 
-import APL.AST (Exp (..), VName)
+import AST (Exp (..), VName)
 
 data Val
   = ValInt Integer
   | ValBool Bool
+  | ValFun Env VName Exp
   deriving (Eq, Show)
 
 type Env = [(VName, Val)]
@@ -45,6 +56,14 @@ evalIntBinOp' f env e1 e2 =
 eval :: Env -> Exp -> Either Error Val
 eval _env (CstInt x) = Right $ ValInt x
 eval _env (CstBool b) = Right $ ValBool b
+eval env (Lambda v body) = Right $ ValFun env v body
+eval env (Apply e1 e2) = do
+  case (eval env e1, eval env e2) of
+    (Right (ValFun env' var e3), Right x) -> eval env'' e3
+      where
+        env'' = envExtend var x env'
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
 eval env (Var v) = case envLookup v env of
   Just x -> Right x
   Nothing -> Left $ "Unknown variable: " ++ v

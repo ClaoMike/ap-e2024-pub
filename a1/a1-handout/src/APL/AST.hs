@@ -1,4 +1,9 @@
-module APL.AST
+-- module APL.AST
+--   ( VName,
+--     Exp (..),
+--     printExp,
+--   )
+module AST
   ( VName,
     Exp (..),
     printExp,
@@ -20,6 +25,8 @@ data Exp
   | Var VName
   | Let VName Exp Exp
   -- TODO: add cases
+  | Lambda VName Exp
+  | Apply Exp Exp
   deriving (Eq, Show)
 
 printExp :: Exp -> String
