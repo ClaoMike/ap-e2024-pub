@@ -64,6 +64,12 @@ eval env (Apply e1 e2) = do
         env'' = envExtend var x env'
     (Left err, _) -> Left err
     (_, Left err) -> Left err
+
+eval env (TryCatch e1 e2) = do
+  case eval env e1 of
+    Right x -> Right x
+    Left err -> eval env e2 
+
 eval env (Var v) = case envLookup v env of
   Just x -> Right x
   Nothing -> Left $ "Unknown variable: " ++ v

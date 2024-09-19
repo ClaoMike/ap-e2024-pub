@@ -27,6 +27,7 @@ data Exp
   -- TODO: add cases
   | Lambda VName Exp
   | Apply Exp Exp
+  | TryCatch Exp Exp
   deriving (Eq, Show)
 
 printExp :: Exp -> String
