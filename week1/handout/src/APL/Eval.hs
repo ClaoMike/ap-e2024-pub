@@ -31,6 +31,16 @@ eval :: Env -> Exp -> Either Error Val
 eval _ (CstInt x) = Right $ ValInt x
 eval _ (CstBool x) = Right $ ValBool x
 
+eval env (Var x) = do
+  case envLookup x env of
+    Nothing -> Left "Variable not found"
+    Just x -> Right x
+
+eval env (Let var e1 e2) = do
+  case eval env e1 of
+    Left err -> Left err
+    Right x -> eval (envExtend var x env) e2
+
 eval env (Eql x y) = do
   case (eval env x, eval env y) of
     (Right(ValBool i1), Right(ValBool i2)) -> if i1==i2 then Right (ValBool True) else Right (ValBool False)
