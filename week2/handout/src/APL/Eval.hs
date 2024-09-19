@@ -3,6 +3,7 @@ module APL.Eval
     eval,
     runEval,
     Error,
+    envEmpty
   )
 where
 
@@ -55,4 +56,53 @@ failure :: String -> EvalM a
 failure s = EvalM(Left s)
 
 eval :: Env -> Exp -> EvalM Val
-eval = undefined -- TODO
+eval _ (CstInt x) = pure $ ValInt x
+eval _ (CstBool x) = pure $ ValBool x
+
+eval env (Add e1 e2) = evalIntHelper env e1 (+) e2 "Add failed"
+eval env (Sub e1 e2) = evalIntHelper env e1 (-) e2 "Sub failed"
+eval env (Mul e1 e2) = evalIntHelper env e1 (*) e2 "Mul failed"
+eval env (Div e1 e2) = evalDivHelper env e1 e2 "Div failed"
+eval env (Pow e1 e2) = evalPowHelper env e1 e2 "Pow failed"
+
+eval env (Eql e1 e2) = evalBoolHelper env e1 (==) e2 "Eql failed"
+eval env (If e1 e2 e3) = undefined
+eval env (Var var) = undefined
+eval env (Let var e1 e2) = undefined
+eval env (Lambda var e1) = undefined
+eval env (Apply e1 e2) = undefined
+
+eval env (TryCatch e1 e2) = undefined
+
+evalIntHelper :: Env -> Exp -> (Integer -> Integer -> Integer) -> Exp -> Error -> EvalM Val
+evalIntHelper env e1 op e2 err =  do
+  x <- eval env e1
+  y <- eval env e2
+  case (x, y) of
+    (ValInt x', ValInt y') -> pure $ ValInt $ op x' y'
+    _ -> failure err
+
+evalDivHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
+evalDivHelper env e1 e2 err =  do
+  x <- eval env e1
+  y <- eval env e2
+  case (x, y) of
+    (_, ValInt 0) -> failure "Division by 0"
+    (ValInt x', ValInt y') -> pure $ ValInt $ div x' y'
+    _ -> failure err
+
+evalPowHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
+evalPowHelper env e1 e2 err =  do
+  x <- eval env e1
+  y <- eval env e2
+  case (x, y) of
+    (ValInt x', ValInt y') -> if y'<0 then failure "Negative power" else pure $ ValInt $ (^) x' y'
+    _ -> failure err
+
+evalBoolHelper :: Env -> Exp -> (Bool -> Bool -> Bool) -> Exp -> Error -> EvalM Val
+evalBoolHelper env e1 op e2 err =  do
+  x <- eval env e1
+  y <- eval env e2
+  case (x, y) of
+    (ValBool x', ValBool y') -> pure $ ValBool $ op x' y'
+    _ -> failure err
