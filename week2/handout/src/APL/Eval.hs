@@ -68,10 +68,26 @@ eval env (Pow e1 e2) = evalPowHelper env e1 e2 "Pow failed"
 eval env (Eql e1 e2) = evalEqlHelper env e1 e2 "Eql failed"
 eval env (If e1 e2 e3) = evalIfHelper env e1 e2 e3
 
-eval env (Var var) = undefined
-eval env (Let var e1 e2) = undefined
-eval env (Lambda var e1) = undefined
-eval env (Apply e1 e2) = undefined
+eval env (Var var) = do
+  case envLookup var env of
+    Just x -> pure x
+    _ -> failure "Var not found"
+
+eval env (Let var e1 e2) = do
+  x <- eval env e1
+  case x of
+    ValInt x' -> eval (envExtend var x env) e2
+    ValBool x' -> eval (envExtend var x env) e2
+    _ -> failure "Let failed"
+
+eval env (Lambda var e1) = pure (ValFun env var e1)
+eval env (Apply e1 e2) = do
+  x <- eval env e1
+  y <- eval env e2
+  case (x, y) of
+    (ValFun env' var e3, ValInt y') -> eval (envExtend var y env') e3
+    (ValFun env' var e3, ValBool y') -> eval (envExtend var y env') e3
+    (_, _) -> failure "Incorrect apply"
 
 eval env (TryCatch e1 e2) = undefined
 
