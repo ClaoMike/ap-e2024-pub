@@ -65,8 +65,9 @@ eval env (Mul e1 e2) = evalIntHelper env e1 (*) e2 "Mul failed"
 eval env (Div e1 e2) = evalDivHelper env e1 e2 "Div failed"
 eval env (Pow e1 e2) = evalPowHelper env e1 e2 "Pow failed"
 
-eval env (Eql e1 e2) = evalBoolHelper env e1 (==) e2 "Eql failed"
-eval env (If e1 e2 e3) = undefined
+eval env (Eql e1 e2) = evalEqlHelper env e1 e2 "Eql failed"
+eval env (If e1 e2 e3) = evalIfHelper env e1 e2 e3
+
 eval env (Var var) = undefined
 eval env (Let var e1 e2) = undefined
 eval env (Lambda var e1) = undefined
@@ -99,10 +100,19 @@ evalPowHelper env e1 e2 err =  do
     (ValInt x', ValInt y') -> if y'<0 then failure "Negative power" else pure $ ValInt $ (^) x' y'
     _ -> failure err
 
-evalBoolHelper :: Env -> Exp -> (Bool -> Bool -> Bool) -> Exp -> Error -> EvalM Val
-evalBoolHelper env e1 op e2 err =  do
+evalEqlHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
+evalEqlHelper env e1 e2 err =  do
   x <- eval env e1
   y <- eval env e2
   case (x, y) of
-    (ValBool x', ValBool y') -> pure $ ValBool $ op x' y'
+    (ValBool x', ValBool y') -> pure $ ValBool $ x' == y'
+    (ValInt x', ValInt y') -> pure $ ValBool $ x' == y'
     _ -> failure err
+
+evalIfHelper :: Env -> Exp -> Exp -> Exp -> EvalM Val
+evalIfHelper env e1 e2 e3 = do
+  x <- eval env e1
+  case x of
+    ValBool True -> eval env e2
+    ValBool False -> eval env e3
+    _ -> failure "Non-boolean conditional."

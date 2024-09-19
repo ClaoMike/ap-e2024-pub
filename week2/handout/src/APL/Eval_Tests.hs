@@ -20,9 +20,9 @@ tests =
       evalExp2Test,
       evalExp3Test,
       evalSafeDivTest,
-      evalSafePowTest
-      -- evalEqlTest,
-      -- evalIfTest
+      evalSafePowTest,
+      evalEqlTest,
+      evalIfTest
     ]
 
 evalConstantTest :: TestTree
@@ -58,9 +58,9 @@ evalSafeDivTest = testCase "Div 2 constants" $ runEval (eval envEmpty (Div (CstI
 evalSafePowTest :: TestTree
 evalSafePowTest = testCase "Pow 2 constants" $ runEval (eval envEmpty (Pow (CstInt 2) (CstInt (-1)))) @?= Left "Negative power"
 
--- evalEqlTest :: TestTree
--- evalEqlTest = testCase "Eql int and bool" $ runEval eval envEmpty (Eql (CstBool True) (CstInt 10)) @?= Left "Operation has failed"
+evalEqlTest :: TestTree
+evalEqlTest = testCase "Eql int and bool" $ runEval (eval envEmpty (Eql (CstBool True) (CstInt 10))) @?= Left "Eql failed"
 
--- evalIfTest :: TestTree
--- evalIfTest = testCase "If int bool bool" $ eval envEmpty (If (CstInt 10) (CstBool True) (CstBool False)) @?= Left "Operation has failed"
+evalIfTest :: TestTree
+evalIfTest = testCase "If int bool bool" $ runEval (eval envEmpty (If (CstInt 10) (CstBool True) (CstBool False))) @?= Left "Non-boolean conditional."
 
