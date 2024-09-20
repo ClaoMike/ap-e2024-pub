@@ -47,22 +47,26 @@ instance Monad EvalM where
          in y env state'
 
 askEnv :: EvalM Env
-askEnv = EvalM $ \env -> Right env
+askEnv = EvalM $ \env state -> (Right env, state)
 
 localEnv :: (Env -> Env) -> EvalM a -> EvalM a
 localEnv f (EvalM m) = EvalM $ \env -> m (f env)
 
 failure :: String -> EvalM a
-failure s = EvalM $ \_env -> Left s
+failure s = EvalM $ \_env state-> (Left s, state ++ [s] ) -- should I?
 
 catch :: EvalM a -> EvalM a -> EvalM a
-catch (EvalM m1) (EvalM m2) = EvalM $ \env ->
-  case m1 env of
-    Left _ -> m2 env
-    Right x -> Right x
+catch (EvalM m1) (EvalM m2) = EvalM $ \env state->
+  case m1 env state of
+    (Left _, state') -> m2 env state'
+    (Right x, state') -> (Right x, state')
 
 runEval :: EvalM a -> ([String], Either Error a)
-runEval (EvalM m) = ([], m envEmpty) -- TODO: extract strings from m and replace the empty list of strings
+runEval (EvalM m) = do
+  case m envEmpty [] of
+    (Right x, state) -> (state, Right x)
+    (Left err, state) -> (state, Left err)
+    -- (Left err, state) -> ([], Left err)
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
