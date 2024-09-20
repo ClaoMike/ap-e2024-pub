@@ -77,7 +77,28 @@ evalTests =
       testCase "TryCatch" $
         eval'
           (TryCatch (Div (CstInt 7) (CstInt 0)) (CstBool True))
-          @?= ([], Right (ValBool True))
+          @?= ([], Right (ValBool True)),
+      -- Tests for Print
+      testCase "Print (Integer)" $
+        eval'
+          (Print "foo" $ CstInt 2)
+          @?= (["foo: 2"], Right (ValInt 2)),
+      -- 
+      testCase "Print (Bool)" $
+        eval'
+          (Print "foo" $ CstBool True)
+          @?= (["foo: True"], Right (ValBool True)),
+      -- 
+      testCase "Print (Function)" $
+        eval'
+          (Print "foo" (Lambda "x" (Var "x"))) 
+          @?= (["foo: #<fun>"], Right (ValFun [] "x" (Var "x"))),
+      -- 
+      testCase "Print (Empty string)" $
+        eval'
+          (Print "" $ CstInt 2)
+          @?= ([": 2"], Right (ValInt 2))
+      -- 
     ]
 
 tests :: TestTree
