@@ -154,7 +154,6 @@ eval (KvGet e) = do
   k <- eval e
   evalKvGet k
 
--- TODO
 evalKvPut :: Val -> Val -> EvalM ()
 evalKvPut k v = EvalM $ \env (state, kvp) -> do
   case lookup k kvp of
