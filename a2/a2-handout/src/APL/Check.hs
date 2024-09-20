@@ -2,6 +2,7 @@ module APL.Check (checkExp, Error) where
 
 import APL.AST (Exp (..), VName)
 import Control.Monad (ap, liftM)
+import Data.Char (GeneralCategory(NotAssigned))
 
 type Error = String
 type Env = [VName]
@@ -55,6 +56,24 @@ check (Apply e1 e2) = do
 check (TryCatch e1 e2) = do
   check e1
   check e2
+check (Var v) = do
+  undefined
+check (Let v e1 e2) = do
+  undefined
+check (Lambda v e) = do
+  undefined
+check (Print s e) = do
+  undefined
+check (KvPut e1 e2) = do
+  undefined
+check (KvGet e) = do
+  undefined
 
 checkExp :: Exp -> Maybe Error
-checkExp = undefined
+checkExp = runCheck . check
+
+runCheck :: CheckM a -> Maybe Error
+runCheck (CheckM m) =
+  case m [] of
+    Left err -> Just err
+    Right _  -> Nothing
