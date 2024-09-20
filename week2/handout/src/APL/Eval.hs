@@ -30,30 +30,35 @@ envLookup v env = lookup v env
 type Error = String
 
 -- a simple data type EvalM and its constructor
-newtype EvalM a = EvalM (Either Error a) 
+newtype EvalM a = EvalM (Env -> Either Error a)
 
 instance Functor EvalM where
-  fmap f (EvalM(Right x)) = EvalM (Right (f x))
-  fmap _ (EvalM(Left err)) = EvalM(Left err)
+  fmap f (EvalM x) =
+    EvalM $ \env -> case x env of
+      Right v -> Right $ f v
+      Left err -> Left err
 
 instance Applicative EvalM where
-  pure x = EvalM(Right x)
-  -- (<*>) :: EvalM (a -> b) -> EvalM a -> EvalM b 
-  EvalM(Left err) <*> _ = EvalM(Left err)
-  _ <*> EvalM(Left err) = EvalM(Left err)
-  EvalM(Right f) <*> x = fmap f x
+  pure x = EvalM $ \_env -> Right x
+  EvalM ef <*> EvalM ex = EvalM $ \env ->
+    case (ef env, ex env) of
+      (Left err, _) -> Left err
+      (_, Left err) -> Left err
+      (Right f, Right x) -> Right (f x)
 
 instance Monad EvalM where
-  EvalM(Left err) >>= _ = EvalM(Left err)
-  EvalM(Right x) >>= f = f x
+  EvalM x >>= f = EvalM $ \env ->
+    case x env of
+      Left err -> Left err
+      Right x' ->
+        let EvalM y = f x'
+         in y env
 
 runEval :: EvalM a -> Either Error a
-runEval x = case x of
-  EvalM(Right x') -> Right x'
-  EvalM(Left err) -> Left err
+runEval (EvalM m) = m envEmpty
 
 failure :: String -> EvalM a
-failure s = EvalM(Left s)
+failure s = EvalM $ \_env -> Left s
 
 eval :: Env -> Exp -> EvalM Val
 eval _ (CstInt x) = pure $ ValInt x
@@ -134,7 +139,7 @@ evalIfHelper env e1 e2 e3 = do
     _ -> failure "Non-boolean conditional."
 
 catch :: EvalM a -> EvalM a -> EvalM a
-catch (EvalM m1) (EvalM m2) = EvalM $
-  case m1 of
-    Left _ -> m2
+catch (EvalM m1) (EvalM m2) = EvalM $ \env ->
+  case m1 env of
+    Left _ -> m2 env
     Right x -> Right x
