@@ -156,9 +156,16 @@ eval (KvGet e) = do
 
 -- TODO
 evalKvPut :: Val -> Val -> EvalM ()
--- if there is an association of k, replace it with the new one ???
-evalKvPut k v = EvalM $ \env (state, kvp) -> do 
-  (Right(), (state,  kvp ++ [(k, v)])) -- recording (k, v) in store 
+evalKvPut k v = EvalM $ \env (state, kvp) -> do
+  case lookup k kvp of
+      Nothing -> (Right(), (state,  kvp ++ [(k, v)])) -- recording (k, v) in store if not found
+      Just x -> (Right(), (state,  replaceKVP k v kvp )) -- replace current value with the new one
+
+-- helper function to find a pair in a list of pairs by a key and then update the value with a new one
+replaceKVP :: Val -> Val -> [(Val, Val)] -> [(Val, Val)]
+replaceKVP k v ((key, val) : rest)
+  | key == k  = (k, v) : rest -- Replace the existing key-value pair
+  | otherwise = (key, val) : replaceKVP k v rest
 
 evalKvGet :: Val -> EvalM Val
 evalKvGet k = do
