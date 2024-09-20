@@ -135,3 +135,12 @@ eval (Apply e1 e2) = do
       failure "Cannot apply non-function"
 eval (TryCatch e1 e2) =
   eval e1 `catch` eval e2
+
+eval (Print str e) = do
+  v <- eval e
+  case v of
+    ValInt _ -> evalPrint (str ++ ": " ++ show v) -- if v is integer
+    ValBool _ -> evalPrint (str ++ ": " ++ show v) -- if v is bool
+    ValFun _ _ _ -> evalPrint (str ++ ": " ++ "#<fun>") -- if v is function
+  return v
+  
