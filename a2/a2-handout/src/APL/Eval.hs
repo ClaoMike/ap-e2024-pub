@@ -60,8 +60,8 @@ catch (EvalM m1) (EvalM m2) = EvalM $ \env ->
     Left _ -> m2 env
     Right x -> Right x
 
-runEval :: EvalM a -> Either Error a
-runEval (EvalM m) = m envEmpty
+runEval :: EvalM a -> ([String], Either Error a)
+runEval (EvalM m) = ([], m envEmpty) -- TODO: extract strings from m and replace the empty list of strings
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
