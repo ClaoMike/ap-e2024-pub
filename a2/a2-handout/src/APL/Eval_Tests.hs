@@ -104,10 +104,29 @@ evalTests =
           (Let "x" (KvPut (CstInt 0) (CstBool True)) (KvGet (CstInt 0)))
           @?= ([], Right (ValBool True)),
       -- 
-      testCase "KvPut (get value after updating a pair)" $
+      testCase "KvPut (get value after updating a bool pair)" $
         eval'
           (Let "x" (KvPut (CstInt 0) (CstBool True))(Let "y" (KvPut (CstInt 0) (CstBool False))(KvGet (CstInt 0))))
           @?= ([], Right (ValBool False)),
+      testCase "KvPut (get value after updating a integer pair)" $
+        eval'
+          (Let "x" (KvPut (CstInt 0) (CstInt 10))(Let "y" (KvPut (CstInt 0) (CstInt 20))(KvGet (CstInt 0))))
+          @?= ([], Right (ValInt 20)),
+
+      testCase "KvPut (get value after updating a integer vs. bool pair)" $
+        eval'
+          (Let "x" (KvPut (CstInt 0) (CstBool True))(Let "y" (KvPut (CstInt 0) (CstInt 20))(KvGet (CstInt 0))))
+          @?= ([], Right (ValInt 20)),
+
+      testCase "KvPut (strange behaviour 1)" $
+        eval'
+          (Let "x" (KvPut (CstInt 1) (CstInt 100)) $ Let "x" (KvPut (CstInt 1) (CstInt 200)) $ KvGet (CstInt 1))
+          @?= ([], Right (ValInt 200)),
+
+      testCase "KvPut (strange behaviour 2)" $
+        eval'
+          (Let "x" (KvPut (CstInt 1) (CstInt 100)) $ Let "y" (KvPut (CstInt 1) (CstInt 200)) $ KvGet (CstInt 1))
+          @?= ([], Right (ValInt 200)),
       --
       testCase "KvGet (no match)" $
         eval'
