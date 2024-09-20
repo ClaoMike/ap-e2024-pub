@@ -150,22 +150,19 @@ eval (KvPut e1 e2) = do
   evalKvPut k v
   return v
 
--- TODO
 eval (KvGet e) = do
   k <- eval e
-  -- search the store and return the value
-  -- no value -> return Left
-  undefined
+  evalKvGet k
 
+-- TODO
 evalKvPut :: Val -> Val -> EvalM ()
--- record (p, v) in store - done
--- if there is an association of k, replace it with the new one
-evalKvPut k v = EvalM $ \env (state, kvp) -> do
-  (Right(), (state,  kvp ++ [(k, v)]))
+-- if there is an association of k, replace it with the new one ???
+evalKvPut k v = EvalM $ \env (state, kvp) -> do 
+  (Right(), (state,  kvp ++ [(k, v)])) -- recording (k, v) in store 
 
 evalKvGet :: Val -> EvalM Val
 evalKvGet k = do
   EvalM $ \env (state, kvp) ->
     case lookup k kvp of
-      Nothing -> (Left "Invalid key:", (state, kvp))
+      Nothing -> (Left ("Invalid key: " ++ show k), (state, kvp))
       Just x -> (Right x, (state, kvp))
