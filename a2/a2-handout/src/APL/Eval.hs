@@ -161,6 +161,7 @@ evalKvPut k v = EvalM $ \env (state, kvp) -> do
       Just x -> (Right(), (state,  replaceKVP k v kvp )) -- replace current value with the new one
 
 -- helper function to find a pair in a list of pairs by a key and then update the value with a new one
+-- ACTUALLY NOT NEEDED, AS THE DEFAULT BEHAVIOUR WAS TO REPLACE IT, BUT AN EXTRA CHECK NEVER HURT NOBODY
 replaceKVP :: Val -> Val -> [(Val, Val)] -> [(Val, Val)]
 replaceKVP k v ((key, val) : rest)
   | key == k  = (k, v) : rest -- Replace the existing key-value pair
