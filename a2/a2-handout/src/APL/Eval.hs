@@ -27,7 +27,8 @@ envLookup :: VName -> Env -> Maybe Val
 envLookup v env = lookup v env
 
 type Error = String
-type State = [String]
+type KVP = (Val, Val)
+type State = ([String], [KVP])
 
 newtype EvalM a = EvalM (Env -> State -> (Either Error a, State))
 
@@ -63,12 +64,12 @@ catch (EvalM m1) (EvalM m2) = EvalM $ \env state->
 
 runEval :: EvalM a -> ([String], Either Error a)
 runEval (EvalM m) = do
-  case m envEmpty [] of
-    (Right x, state) -> (state, Right x)
-    (Left err, state) -> (state, Left err)
+  case m envEmpty ([], [])  of
+    (Right x, state) -> (fst state, Right x)
+    (Left err, state) -> (fst state, Left err)
 
 evalPrint :: String -> EvalM()
-evalPrint str = EvalM $ \env state -> (Right(), state++[str])
+evalPrint str = EvalM $ \env (state, kvp) -> (Right(), (state ++ [str], kvp))
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
@@ -150,7 +151,7 @@ eval (KvPut e1 e2) = do
   -- record (p, v) in store
   -- if there is an association of k, replace it with the new one
   return v
-  
+
 -- TODO
 eval (KvGet e) = do
   k <- eval e
