@@ -142,4 +142,25 @@ eval (Print str e) = do
     ValBool x -> evalPrint (str ++ ": " ++ show x) -- if v is bool
     ValFun _ _ _ -> evalPrint (str ++ ": " ++ "#<fun>") -- if v is function
   return v
+
+-- TODO
+eval (KvPut e1 e2) = do
+  k <- eval e1
+  v <- eval e2
+  -- record (p, v) in store
+  -- if there is an association of k, replace it with the new one
+  return v
   
+-- TODO
+eval (KvGet e) = do
+  k <- eval e
+  -- search the store and return the value
+  -- no value -> return Left
+  undefined
+
+evalKvPut :: Val -> Val -> EvalM ()
+evalKvPut = undefined
+
+evalKvGet :: Val -> EvalM Val
+evalKvGet = undefined
+
