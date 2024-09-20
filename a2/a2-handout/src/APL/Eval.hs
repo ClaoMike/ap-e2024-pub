@@ -29,13 +29,13 @@ envLookup v env = lookup v env
 type Error = String
 type State = [String]
 
-newtype EvalM a = EvalM (Env -> (Either Error a, State))
+newtype EvalM a = EvalM (Env -> State -> (Either Error a, State))
 
 instance Functor EvalM where
   fmap = liftM
 
 instance Applicative EvalM where
-  pure x = EvalM $ \_env -> Right x
+  pure x = EvalM $ \_env state -> (Right x, state)
   (<*>) = ap
 
 instance Monad EvalM where
