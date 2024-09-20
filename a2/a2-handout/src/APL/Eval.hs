@@ -39,12 +39,12 @@ instance Applicative EvalM where
   (<*>) = ap
 
 instance Monad EvalM where
-  EvalM x >>= f = EvalM $ \env ->
-    case x env of
-      Left err -> Left err
-      Right x' ->
+  EvalM x >>= f = EvalM $ \env state ->
+    case x env state of
+      (Left err, state') -> (Left err, state')
+      (Right x', state') ->
         let EvalM y = f x'
-         in y env
+         in y env state'
 
 askEnv :: EvalM Env
 askEnv = EvalM $ \env -> Right env
