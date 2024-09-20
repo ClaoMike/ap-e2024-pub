@@ -53,7 +53,7 @@ localEnv :: (Env -> Env) -> EvalM a -> EvalM a
 localEnv f (EvalM m) = EvalM $ \env -> m (f env)
 
 failure :: String -> EvalM a
-failure s = EvalM $ \_env state-> (Left s, state ++ [s] ) -- should I?
+failure s = EvalM $ \_env state-> (Left s, state ) -- should I?
 
 catch :: EvalM a -> EvalM a -> EvalM a
 catch (EvalM m1) (EvalM m2) = EvalM $ \env state->
@@ -66,7 +66,6 @@ runEval (EvalM m) = do
   case m envEmpty [] of
     (Right x, state) -> (state, Right x)
     (Left err, state) -> (state, Left err)
-    -- (Left err, state) -> ([], Left err)
 
 evalPrint :: String -> EvalM()
 evalPrint str = EvalM $ \env state -> (Right(), state++[str])
@@ -139,8 +138,8 @@ eval (TryCatch e1 e2) =
 eval (Print str e) = do
   v <- eval e
   case v of
-    ValInt _ -> evalPrint (str ++ ": " ++ show v) -- if v is integer
-    ValBool _ -> evalPrint (str ++ ": " ++ show v) -- if v is bool
+    ValInt x -> evalPrint (str ++ ": " ++ show x) -- if v is integer
+    ValBool x -> evalPrint (str ++ ": " ++ show x) -- if v is bool
     ValFun _ _ _ -> evalPrint (str ++ ": " ++ "#<fun>") -- if v is function
   return v
   
