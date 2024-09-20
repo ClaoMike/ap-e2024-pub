@@ -68,6 +68,9 @@ runEval (EvalM m) = do
     (Left err, state) -> (state, Left err)
     -- (Left err, state) -> ([], Left err)
 
+evalPrint :: String -> EvalM()
+evalPrint str = EvalM $ \env state -> (Right(), state++[str])
+
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
   v1 <- eval e1
