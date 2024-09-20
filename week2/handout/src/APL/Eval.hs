@@ -57,85 +57,95 @@ instance Monad EvalM where
 runEval :: EvalM a -> Either Error a
 runEval (EvalM m) = m envEmpty
 
+askEnv :: EvalM Env
+askEnv = EvalM $ \env -> Right env
+
+localEnv :: (Env -> Env) -> EvalM a -> EvalM a
+localEnv f (EvalM m) = EvalM $ \env -> m (f env)
+
 failure :: String -> EvalM a
 failure s = EvalM $ \_env -> Left s
 
-eval :: Env -> Exp -> EvalM Val
-eval _ (CstInt x) = pure $ ValInt x
-eval _ (CstBool x) = pure $ ValBool x
+eval :: Exp -> EvalM Val
+eval (CstInt x) = pure $ ValInt x
+eval (CstBool x) = pure $ ValBool x
 
-eval env (Add e1 e2) = evalIntHelper env e1 (+) e2 "Add failed"
-eval env (Sub e1 e2) = evalIntHelper env e1 (-) e2 "Sub failed"
-eval env (Mul e1 e2) = evalIntHelper env e1 (*) e2 "Mul failed"
-eval env (Div e1 e2) = evalDivHelper env e1 e2 "Div failed"
-eval env (Pow e1 e2) = evalPowHelper env e1 e2 "Pow failed"
+eval (Add e1 e2) = evalIntHelper e1 (+) e2 "Add failed"
+eval (Sub e1 e2) = evalIntHelper e1 (-) e2 "Sub failed"
+eval (Mul e1 e2) = evalIntHelper e1 (*) e2 "Mul failed"
+eval (Div e1 e2) = evalDivHelper e1 e2 "Div failed"
+eval (Pow e1 e2) = evalPowHelper e1 e2 "Pow failed"
 
-eval env (Eql e1 e2) = evalEqlHelper env e1 e2 "Eql failed"
-eval env (If e1 e2 e3) = evalIfHelper env e1 e2 e3
+eval (Eql e1 e2) = evalEqlHelper e1 e2 "Eql failed"
+eval (If e1 e2 e3) = evalIfHelper e1 e2 e3
 
-eval env (Var var) = do
+eval (Var var) = do
+  env <- askEnv
   case envLookup var env of
     Just x -> pure x
     _ -> failure "Var not found"
 
-eval env (Let var e1 e2) = do
-  x <- eval env e1
+eval (Let var e1 e2) = do
+  x <- eval e1
   case x of
-    ValInt x' -> eval (envExtend var x env) e2
-    ValBool x' -> eval (envExtend var x env) e2
+    ValInt x' -> localEnv (envExtend var x) (eval e2)
+    ValBool x' -> localEnv (envExtend var x) (eval e2)
     _ -> failure "Let failed"
 
-eval env (Lambda var e1) = pure (ValFun env var e1)
-eval env (Apply e1 e2) = do
-  x <- eval env e1
-  y <- eval env e2
+eval (Lambda var e1) = do
+  env <- askEnv
+  pure (ValFun env var e1)
+
+eval (Apply e1 e2) = do
+  x <- eval e1
+  y <- eval e2
   case (x, y) of
-    (ValFun env' var e3, ValInt y') -> eval (envExtend var y env') e3
-    (ValFun env' var e3, ValBool y') -> eval (envExtend var y env') e3
+    (ValFun env' var e3, ValInt y') -> localEnv (envExtend var y) (eval e2)
+    (ValFun env' var e3, ValBool y') -> localEnv (envExtend var y) (eval e2)
     (_, _) -> failure "Incorrect apply"
 
-eval env (TryCatch e1 e2) = eval env e1 `catch` eval env e2
+eval (TryCatch e1 e2) = eval e1 `catch` eval e2
 
-evalIntHelper :: Env -> Exp -> (Integer -> Integer -> Integer) -> Exp -> Error -> EvalM Val
-evalIntHelper env e1 op e2 err =  do
-  x <- eval env e1
-  y <- eval env e2
+evalIntHelper :: Exp -> (Integer -> Integer -> Integer) -> Exp -> Error -> EvalM Val
+evalIntHelper e1 op e2 err =  do
+  x <- eval e1
+  y <- eval e2
   case (x, y) of
     (ValInt x', ValInt y') -> pure $ ValInt $ op x' y'
     _ -> failure err
 
-evalDivHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
-evalDivHelper env e1 e2 err =  do
-  x <- eval env e1
-  y <- eval env e2
+evalDivHelper :: Exp -> Exp -> Error -> EvalM Val
+evalDivHelper e1 e2 err =  do
+  x <- eval e1
+  y <- eval e2
   case (x, y) of
     (_, ValInt 0) -> failure "Division by 0"
     (ValInt x', ValInt y') -> pure $ ValInt $ div x' y'
     _ -> failure err
 
-evalPowHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
-evalPowHelper env e1 e2 err =  do
-  x <- eval env e1
-  y <- eval env e2
+evalPowHelper :: Exp -> Exp -> Error -> EvalM Val
+evalPowHelper e1 e2 err =  do
+  x <- eval e1
+  y <- eval e2
   case (x, y) of
     (ValInt x', ValInt y') -> if y'<0 then failure "Negative power" else pure $ ValInt $ (^) x' y'
     _ -> failure err
 
-evalEqlHelper :: Env -> Exp -> Exp -> Error -> EvalM Val
-evalEqlHelper env e1 e2 err =  do
-  x <- eval env e1
-  y <- eval env e2
+evalEqlHelper :: Exp -> Exp -> Error -> EvalM Val
+evalEqlHelper e1 e2 err =  do
+  x <- eval e1
+  y <- eval e2
   case (x, y) of
     (ValBool x', ValBool y') -> pure $ ValBool $ x' == y'
     (ValInt x', ValInt y') -> pure $ ValBool $ x' == y'
     _ -> failure err
 
-evalIfHelper :: Env -> Exp -> Exp -> Exp -> EvalM Val
-evalIfHelper env e1 e2 e3 = do
-  x <- eval env e1
+evalIfHelper :: Exp -> Exp -> Exp -> EvalM Val
+evalIfHelper e1 e2 e3 = do
+  x <- eval e1
   case x of
-    ValBool True -> eval env e2
-    ValBool False -> eval env e3
+    ValBool True -> eval e2
+    ValBool False -> eval e3
     _ -> failure "Non-boolean conditional."
 
 catch :: EvalM a -> EvalM a -> EvalM a
