@@ -91,15 +91,35 @@ evalTests =
       -- 
       testCase "Print (Function)" $
         eval'
-          (Print "foo" (Lambda "x" (Var "x"))) 
+          (Print "foo" (Lambda "x" (Var "x")))
           @?= (["foo: #<fun>"], Right (ValFun [] "x" (Var "x"))),
       -- 
       testCase "Print (Empty string)" $
         eval'
           (Print "" $ CstInt 2)
-          @?= ([": 2"], Right (ValInt 2))
+          @?= ([": 2"], Right (ValInt 2)),
       -- 
+      testCase "KvPut (Empty store)" $
+        eval'
+          (Let "x" (KvPut (CstInt 0) (CstBool True)) (KvGet (CstInt 0)))
+          @?= ([], Right (ValBool True)),
+      -- 
+      testCase "KvPut (get value after updating a pair)" $
+        eval'
+          (Let "x" (KvPut (CstInt 0) (CstBool True))(Let "y" (KvPut (CstInt 0) (CstBool False))(KvGet (CstInt 0))))
+          @?= ([], Right (ValBool False)),
+      --
+      testCase "KvGet (no match)" $
+        eval'
+          ( Let "x" (KvPut (CstInt 0) (CstBool True))(KvGet (CstInt 20)) )
+          @?= ([], Left "Invalid key: ValInt 20"),
+      --
+      testCase "KvGet (empty)" $
+        eval'
+          ( KvGet (CstInt 20)) 
+          @?= ([], Left "Invalid key: ValInt 20")
+      -- 
+      
     ]
-
 tests :: TestTree
 tests = testGroup "APL" [evalTests]
