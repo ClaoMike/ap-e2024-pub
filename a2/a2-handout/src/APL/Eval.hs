@@ -27,8 +27,9 @@ envLookup :: VName -> Env -> Maybe Val
 envLookup v env = lookup v env
 
 type Error = String
+type State = [String]
 
-newtype EvalM a = EvalM (Env -> Either Error a)
+newtype EvalM a = EvalM (Env -> (Either Error a, State))
 
 instance Functor EvalM where
   fmap = liftM
