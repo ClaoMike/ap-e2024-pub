@@ -144,12 +144,10 @@ eval (Print str e) = do
     ValFun _ _ _ -> evalPrint (str ++ ": " ++ "#<fun>") -- if v is function
   return v
 
--- TODO
 eval (KvPut e1 e2) = do
   k <- eval e1
   v <- eval e2
-  -- record (p, v) in store
-  -- if there is an association of k, replace it with the new one
+  evalKvPut k v
   return v
 
 -- TODO
@@ -160,8 +158,14 @@ eval (KvGet e) = do
   undefined
 
 evalKvPut :: Val -> Val -> EvalM ()
-evalKvPut = undefined
+-- record (p, v) in store - done
+-- if there is an association of k, replace it with the new one
+evalKvPut k v = EvalM $ \env (state, kvp) -> do
+  (Right(), (state,  kvp ++ [(k, v)]))
 
 evalKvGet :: Val -> EvalM Val
-evalKvGet = undefined
-
+evalKvGet k = do
+  EvalM $ \env (state, kvp) ->
+    case lookup k kvp of
+      Nothing -> (Left "Invalid key:", (state, kvp))
+      Just x -> (Right x, (state, kvp))
