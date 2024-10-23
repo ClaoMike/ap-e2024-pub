@@ -10,6 +10,8 @@
 * [The three kinds of Haskell exceptions and how to use
   them](https://www.tweag.io/blog/2020-04-16-exceptions-in-haskell/)
 
+* [`exitFailure` doesn’t exit](https://h2.jaguarpaw.co.uk/posts/exitfailure-doesnt-exit/)
+
 ## Exercises
 
 In these exercises, and the associated assignment, you will be
@@ -481,8 +483,8 @@ jobStatus :: SPC -> JobId -> IO (Maybe JobStatus)
 * Add a constructor to `SPCMsg` for requesting the status of a job.
 
 * Handle the new message in `handleMsg`. If the provided `JobId` is
-  found in the list of pending jobs, then the response should be `Just
-  JobPending`, and otherwise `Nothing`.
+  found in the list of pending jobs, then the response should be
+  `JobPending`, and otherwise `JobUnknown`.
 
 * Implement the `jobStatus` function and add it to the module export
   list.
@@ -500,7 +502,7 @@ jobStatus :: SPC -> JobId -> IO (Maybe JobStatus)
 data SPCMsg
   = ...
   | -- | Immediately reply the status of the job.
-    MsgJobStatus JobId (ReplyChan (Maybe JobStatus))
+    MsgJobStatus JobId (ReplyChan JobStatus)
 
 handleMsg :: Chan SPCMsg -> SPCM ()
 handleMsg c = do
@@ -652,7 +654,7 @@ send a response to all relevant channels.
 1. Extend `SPCMsg` with a new message for waiting on a given job to finish.
 
 2. Extend `SPCState` with with a field of type `[(JobId, Chan
-   (Maybe JobDoneReason))]`.
+   JobDoneReason)]`.
 
 3. Extend `handleMsg` to handle the new message added in step 1.
 
@@ -708,6 +710,16 @@ jobWait :: SPC -> JobId -> IO (Maybe JobDoneReason)
 jobWait (SPC c) jobid =
   requestReply c $ MsgJobWait jobid
 
+startSPC :: IO SPC
+startSPC = do
+  let initialState c =
+        SPCState
+         { ...
+         , spcChan = c
+         , spcJobRunning = Nothing
+         }
+  server <- spawn $ \c -> runSPCM (initialState c) $ forever $ handleMsg c
+  pure $ SPC server
 ```
 
 </details>
@@ -807,6 +819,7 @@ jobDone jobid reason = do
         state
           { spcWaiting = not_waiting_for_job,
             spcJobsDone = (jobid, reason) : spcJobsDone state,
+            spcJobRunning = Nothing,
             spcJobsPending = removeAssoc jobid $ spcJobsPending state
           }
 
@@ -1018,7 +1031,6 @@ checkTimeouts = do
     Just (jobid, deadline, tid)
       | now >= deadline -> do
           io $ killThread tid
-          put $ state {spcJobRunning = Nothing}
           jobDone jobid DoneTimeout
     _ -> pure ()
 
