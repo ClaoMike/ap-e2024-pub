@@ -1,5 +1,9 @@
 module APL.Eval
   (
+    Val (..),
+    Env,
+    envEmpty,
+    eval,
   )
 where
 
@@ -11,6 +15,7 @@ type Env = [(VName, Val)]
 data Val
   = ValInt Integer
   | ValBool Bool
+  | ValFun Env VName Exp
   deriving(Eq, Show)
 
 -- | Empty environment, which contains no variable bindings.
