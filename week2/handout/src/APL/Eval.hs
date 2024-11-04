@@ -28,7 +28,7 @@ envLookup v env = lookup v env
 
 type Error = String
 
-newtype EvalM a = EvalM a -- TODO
+newtype EvalM a = EvalM a
 
 runEval :: EvalM a -> Either Error a
 runEval = undefined -- TODO
